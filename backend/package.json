@@ -1,0 +1,33 @@
+{
+  "name": "paytrixx-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Paytrixx — payment router and tracking platform (routes payments to Paytm, never collects money itself)",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed:admin": "node scripts/seedAdmin.js",
+    "test": "node --test \"tests/**/*.test.js\""
+  },
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.3",
+    "nodemailer": "^7.0.10",
+    "morgan": "^1.10.1",
+    "paytmchecksum": "^1.5.1"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.2.0",
+    "nodemon": "^3.1.10"
+  }
+}

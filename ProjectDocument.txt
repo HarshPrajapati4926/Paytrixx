@@ -1,0 +1,360 @@
+I want to build a production-ready full-stack system called **Paytrixx**, which is a **Payment Router + Tracking Platform**, integrated with an Ecommerce system.
+
+IMPORTANT:
+Paytrixx is NOT a payment gateway. It must NEVER directly collect money.
+All payments must be processed via Paytm Payment Gateway.
+
+---
+
+# 🎯 CORE OBJECTIVE
+
+Build a system where:
+
+1. A merchant integrates Paytrixx API
+2. Paytrixx creates an order internally
+3. The system routes the payment to Paytm via Ecommerce backend
+4. User pays on Paytm
+5. Paytm sends webhook
+6. Backend updates order + transaction
+7. Paytrixx notifies merchant via callback
+8. Paytrixx dashboard shows merchant-wise analytics
+
+---
+
+# 🧱 SYSTEM ARCHITECTURE
+
+Use a **Modular Monolith Backend**:
+
+* Node.js + Express.js
+* MongoDB (Mongoose)
+* Shared backend for:
+
+  * Ecommerce
+  * Payment (Paytrixx)
+  * Merchant system
+  * Webhook handling
+
+Multiple Frontends (React + Vite):
+
+1. Ecommerce Website (customer)
+2. Ecommerce Admin Panel
+3. Paytrixx Website (merchant dashboard + API docs)
+4. Paytrixx Admin Panel
+
+---
+
+# 📁 ROOT FOLDER STRUCTURE
+
+/project-root
+/backend
+/nexttern
+/web
+/admin
+/ecommerce
+/web
+/admin
+
+---
+
+# 🧠 BACKEND MODULE STRUCTURE
+
+/backend
+/modules
+/ecommerce
+- product.controller.js
+- order.controller.js
+- order.service.js
+
+```
+/payment
+  - payment.controller.js
+  - payment.service.js
+
+/merchant
+  - merchant.controller.js
+  - merchant.service.js
+
+/webhook
+  - paytm.webhook.controller.js
+```
+
+/models
+/routes
+/services
+/middleware
+/utils
+/config
+
+---
+
+# 🗄️ DATABASE DESIGN (MONGODB)
+
+## Order Collection
+
+* orderId (string, unique)
+* merchantId (reference)
+* amount (number)
+* currency
+* status (pending, paid, failed)
+* gateway (paytm)
+* paytmTxnId
+* createdAt, updatedAt
+
+## Transaction Collection
+
+* transactionId
+* orderId
+* merchantId
+* amount
+* status (pending, success, failed)
+* gatewayResponse (JSON)
+* createdAt
+
+## Merchant Collection
+
+* name
+* apiKey (unique)
+* callbackUrl
+* isActive
+* createdAt
+
+## Optional: Logs Collection
+
+* type (webhook, error, api)
+* payload
+* status
+* timestamp
+
+---
+
+# 🔄 PAYMENT FLOW (STRICTLY FOLLOW)
+
+Step 1:
+Merchant calls:
+POST /api/payment/create
+
+Headers:
+
+* x-api-key
+
+Body:
+{
+amount,
+currency,
+customerDetails
+}
+
+---
+
+Step 2:
+Backend validates merchant using API key
+
+---
+
+Step 3:
+Backend creates:
+
+* Order (status: pending)
+* Transaction (status: pending)
+
+---
+
+Step 4:
+Backend creates Paytm order using Paytm API
+
+---
+
+Step 5:
+Return:
+{
+orderId,
+paymentUrl,
+status: "pending"
+}
+
+---
+
+Step 6:
+User completes payment on Paytm
+
+---
+
+Step 7:
+Paytm calls webhook:
+POST /api/webhook/paytm
+
+---
+
+Step 8:
+Backend MUST:
+
+1. Verify Paytm signature (CRITICAL)
+2. Check if order already processed (idempotency)
+3. Update:
+
+   * Order.status = "paid"
+   * Transaction.status = "success"
+4. Store Paytm txnId
+5. Log response
+
+---
+
+Step 9:
+Backend sends callback to merchant:
+
+POST merchant.callbackUrl
+
+{
+orderId,
+status: "success",
+amount
+}
+
+---
+
+# ❗ STRICT RULES
+
+* NEVER mark success before webhook
+* NEVER use static QR codes
+* ALWAYS verify Paytm signature
+* HANDLE duplicate webhooks safely
+* USE idempotent logic
+* LOG all events
+
+---
+
+# 🔌 REQUIRED APIs
+
+## Payment APIs
+
+* POST /api/payment/create
+* GET /api/payment/status/:orderId
+
+## Webhook
+
+* POST /api/webhook/paytm
+
+## Merchant APIs
+
+* GET /api/merchant/transactions
+* GET /api/merchant/orders
+
+## Admin APIs
+
+* GET /api/admin/transactions
+* GET /api/admin/merchants
+
+---
+
+# 🔐 AUTHENTICATION
+
+* Merchant → API key based auth
+* Admin → JWT auth
+* Middleware for role-based access
+
+Roles:
+
+* customer
+* merchant
+* admin
+
+---
+
+# 🧠 FRONTEND REQUIREMENTS
+
+## Ecommerce Website
+
+* Product listing
+* Cart + checkout
+* Redirect to Paytm payment
+
+## Ecommerce Admin
+
+* Manage products
+* View orders
+* Payment status tracking
+
+## Paytrixx Website (Merchant)
+
+* Dashboard (transactions)
+* API key view
+* Payment logs
+
+## Paytrixx Admin
+
+* Manage merchants
+* View all transactions
+* System monitoring
+
+---
+
+# ⚙️ ADVANCED FEATURES
+
+* Webhook retry system (queue-based)
+* Payment status polling
+* Rate limiting
+* Centralized logging
+* Error handling middleware
+
+---
+
+# 🧪 EDGE CASES
+
+* Duplicate webhook calls
+* Payment success but callback failed
+* Partial failures
+* Timeout handling
+* Invalid API key
+
+---
+
+# 🌐 ENV VARIABLES
+
+PORT=5000
+MONGO_URI=
+PAYTM_MERCHANT_ID=
+PAYTM_MERCHANT_KEY=
+PAYTM_WEBSITE=
+BASE_URL=
+
+---
+
+# 🚀 DEPLOYMENT
+
+Backend:
+
+* Render / AWS / VPS
+
+Frontend:
+
+* Vercel / Netlify
+
+Domains:
+
+* api.yourdomain.com
+* shop.yourdomain.com
+* pay.yourdomain.com
+
+---
+
+# 🎯 EXPECTED OUTPUT
+
+Generate:
+
+1. Full backend code (modular, clean architecture)
+2. Paytm integration (order + webhook verification)
+3. MongoDB models
+4. API routes
+5. Middleware (auth, error)
+6. Sample frontend scaffolding (React)
+7. Clear instructions to run the project
+
+---
+
+# 🧠 FINAL NOTE
+
+This is a Payment Router system, not a Payment Gateway.
+
+The system must route payments to Paytm and track them, not process them internally.
+
+Ensure scalability, security, and clean code practices.
